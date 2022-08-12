@@ -12,6 +12,7 @@ import (
 var kube_url = "http://localhost:8001"
 
 func main() {
+
 	getDistro()
 
 }
@@ -237,6 +238,7 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 	print("Namespace Count: ")
 	print(namespaceCount)
 	print("\n")
+
 	print(distroArt[5])
 	print("\n")
 	print(distroArt[6])
