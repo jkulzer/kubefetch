@@ -6,6 +6,6 @@ clone:
 
 steps:
 - name: test
-  image: golang
+  image: golang:latest
   commands:
   - go run ./kubefetch.go
