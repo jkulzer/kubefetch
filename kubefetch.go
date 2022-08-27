@@ -148,6 +148,7 @@ func getDistro() {
 
 func assemblingArt(distro string, kube_version string, major_version string, minor_version string) {
 	var distroArt [17]string
+	var asciiArtColor string
 
 	if distro == "k8s" {
 
@@ -168,6 +169,7 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 		distroArt[14] = "       Xo::::cKd::::::::xK:::::oN       	"
 		distroArt[15] = "        :0c::::::::::::::::::lK,        	"
 		distroArt[16] = "          kklcccccccccccccclOx          	"
+		asciiArtColor = "34"
 
 	} else if distro == "k3s" {
 
@@ -188,6 +190,7 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 		distroArt[14] = " oMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMo 	"
 		distroArt[15] = "    ''''''''''''''''''''''''''''''''    	"
 		distroArt[16] = "										 	"
+		asciiArtColor = "93"
 
 	} else {
 
@@ -208,60 +211,61 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 		distroArt[14] = "       Xo::::cKd::::::::xK:::::oN       	"
 		distroArt[15] = "        :0c::::::::::::::::::lK,        	"
 		distroArt[16] = "          kklcccccccccccccclOx          	"
+		asciiArtColor = "34"
 	}
 
 	var nodeCount = getNodeCount()
 	var podCount = getPodCount()
 	var namespaceCount = getNamespaceCount()
 
-	print(distroArt[0])
-	print("Distro: ")
+	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mDistro: \033[0m")
 	print(distro)
 	print("\n")
 
-	print(distroArt[1])
-	print("Version: ")
+	print("\033[" + asciiArtColor + ";1m" + distroArt[1] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mVersion: \033[0m")
 	print(major_version, ".", minor_version)
 	print("\n")
 
-	print(distroArt[2])
-	print("Node Count: ")
+	print("\033[" + asciiArtColor + ";1m" + distroArt[2] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mNode Count: \033[0m")
 	print(nodeCount)
 	print("\n")
 
-	print(distroArt[3])
-	print("Pod Count: ")
+	print("\033[" + asciiArtColor + ";1m" + distroArt[3] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mPod Count: \033[0m")
 	print(podCount)
 	print("\n")
 
-	print(distroArt[4])
-	print("Namespace Count: ")
+	print("\033[" + asciiArtColor + ";1m" + distroArt[4] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mNamespace Count: \033[0m")
 	print(namespaceCount)
 	print("\n")
 
-	print(distroArt[5])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[5] + "\033[0m")
 	print("\n")
-	print(distroArt[6])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
 	print("\n")
-	print(distroArt[7])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")
 	print("\n")
-	print(distroArt[8])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[8] + "\033[0m")
 	print("\n")
-	print(distroArt[9])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[9] + "\033[0m")
 	print("\n")
-	print(distroArt[10])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[10] + "\033[0m")
 	print("\n")
-	print(distroArt[11])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[11] + "\033[0m")
 	print("\n")
-	print(distroArt[12])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[12] + "\033[0m")
 	print("\n")
-	print(distroArt[13])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[13] + "\033[0m")
 	print("\n")
-	print(distroArt[14])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[14] + "\033[0m")
 	print("\n")
-	print(distroArt[15])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[15] + "\033[0m")
 	print("\n")
-	print(distroArt[16])
+	print("\033[" + asciiArtColor + ";1m" + distroArt[16] + "\033[0m")
 	print("\n")
 	print("")
 }
