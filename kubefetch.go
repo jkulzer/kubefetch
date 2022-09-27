@@ -78,6 +78,7 @@ func getNamespaceCount() (namespaceCount int) {
 
 	return namespaceCount
 }
+
 func getPodCount() (podCount int) {
 
 	resp, err := http.Get(kube_url + "/api/v1/pods")
@@ -143,6 +144,49 @@ func getDistro() {
 	} else {
 		print("connection error")
 	}
+
+}
+
+func getUsedIngress() (ingressUsed string) {
+	respCouldContainTraefik, err := http.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+	respCouldContainNginx, err := http.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer respCouldContainTraefik.Body.Close()
+	defer respCouldContainNginx.Body.Close()
+
+	if respCouldContainTraefik.StatusCode == http.StatusOK {
+
+		couldContainTraefik, err := io.ReadAll(respCouldContainTraefik.Body)
+		couldContainNginx, err := io.ReadAll(respCouldContainNginx.Body)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//managedFields only appears once per node in the json file you get when calling the url, so it is getting used to get the pod count
+		var firstAppend int64
+
+		if strings.Contains(string(couldContainTraefik), "traefik.containo.us") {
+			ingressUsed = "Traefik"
+			firstAppend = 1
+		} else {
+		}
+
+		if strings.Contains(string(couldContainNginx), "nginx") {
+			if firstAppend == 1 {
+				ingressUsed = ingressUsed + ", "
+			}
+			firstAppend = 1
+			ingressUsed = ingressUsed + "Nginx"
+		} else {
+		}
+
+	}
+	return ingressUsed
 
 }
 
@@ -217,6 +261,7 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 	var nodeCount = getNodeCount()
 	var podCount = getPodCount()
 	var namespaceCount = getNamespaceCount()
+	var ingressUsed = getUsedIngress()
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
 	print("\033[" + asciiArtColor + ";1mDistro: \033[0m")
@@ -244,7 +289,10 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[5] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mIngress: \033[0m")
+	print(ingressUsed)
 	print("\n")
+
 	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
 	print("\n")
 	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")

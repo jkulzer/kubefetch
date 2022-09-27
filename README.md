@@ -13,23 +13,18 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://git.kube.home/johannes/kubefetch">
     <img src="https://cncf-branding.netlify.app/img/projects/kubernetes/icon/color/kubernetes-icon-color.svg" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">Kubefetch</h3>
 
   <p align="center">
-    project_description
+    A neofetch-inspired application that displays stats about your Kubernetes cluster.
     <br />
-    <a href="https://github.com/jkulzer/kube"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/jkulzer/kube">View Demo</a>
     ·
-    <a href="https://github.com/jkulzer/kube/issues">Report Bug</a>
+    <a href="https://github.com/jkulzer/kubefetch/issues">Report Bug</a>
     ·
-    <a href="https://github.com/jkulzer/kube/issues">Request Feature</a>
+    <a href="https://github.com/jkulzer/kubefetch/issues">Request Feature</a>
   </p>
 </div>
 
@@ -66,10 +61,10 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+This is only visible in my local network, it shows the build progress on my own Drone server.
 [![Build Status](https://drone.kube.home/api/badges/johannes/kubefetch/status.svg)](https://drone.kube.home/johannes/kubefetch)
 
 
@@ -86,7 +81,13 @@ Neofetch for Kubernetes
 
 ### Installation
 
-1. Test
+0. Disclaimer:
+This is still in active development and isn't stable. There is currently no good way to distribute or instal it.
+
+1. With go run
+    ```sh
+    go run ./kubefetch.go
+    ```
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -96,9 +97,7 @@ Neofetch for Kubernetes
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
-
-_For more examples, please refer to the [Documentation](https://example.com)_
+TODO
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -109,8 +108,11 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 - [ ] Auth via kubeconfig
 - [ ] More displayed info
+	- [ ] CNI used
+	- [ ] CRI used
+	- [ ] Storage Solution used
 
-See the [open issues](https://github.com/jkulzer/kube/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/jkulzer/kubefetch/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -127,7 +129,7 @@ Distributed under the GNU GPL v3 License. See `LICENSE.txt` for more information
 <!-- CONTACT -->
 ## Contact
 
-Project Link: [https://github.com/jkulzer/kubefetch](https://github.com/jkulzer/kube)
+Project Link: [https://github.com/jkulzer/kubefetch](https://github.com/jkulzer/kubefetch)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
