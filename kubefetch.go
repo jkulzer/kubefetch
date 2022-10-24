@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"io"
 	"log"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 var kube_url = "http://localhost:8001"
 
 func main() {
-
 	getDistro()
 
 }
@@ -316,4 +316,21 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 	print("\033[" + asciiArtColor + ";1m" + distroArt[16] + "\033[0m")
 	print("\n")
 	print("")
+}
+
+func readCerts() {
+
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+	resp, err := client.Get("https://localhost:38045" + "/api/v1/nodes")
+
 }
