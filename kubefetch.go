@@ -12,23 +12,6 @@ import (
 
 var kube_url = "https://localhost:38045"
 
-/*
-func initClient() {
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-}
-*/
-
 func main() {
 	assemblingArt()
 }
@@ -36,11 +19,13 @@ func main() {
 // gets the amount of nodes in the cluster
 func getNodeCount() (nodeCount int) {
 
+	//loads certificate
 	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//initializes client
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -49,7 +34,11 @@ func getNodeCount() (nodeCount int) {
 		},
 	}
 
-	resp, err := client.Get(kube_url + "/api/v1/nodes")
+	//the apiEndpoint gets declared as a variable to ease logging
+	apiEndpoint := "/api/v1/nodes"
+
+	//fetches data about nodes
+	resp, err := client.Get(kube_url + apiEndpoint)
 
 	if err != nil {
 		log.Fatal(err)
@@ -57,6 +46,7 @@ func getNodeCount() (nodeCount int) {
 
 	defer resp.Body.Close()
 
+	//continues if HTTP status code is ok, logs an error otherwise
 	if resp.StatusCode == http.StatusOK {
 
 		bodyBytes, err := io.ReadAll(resp.Body)
@@ -71,19 +61,25 @@ func getNodeCount() (nodeCount int) {
 		nodeCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		log.Println("Connection error while fetching nodes")
+		//logs the error
+		log.Println("Connection error:", kube_url+apiEndpoint)
 	}
 
+	//returns the node count
+	//the functions output gets used somewhere else
 	return nodeCount
 }
 
 // gets the amount of nodes in the cluster
 func getNamespaceCount() (namespaceCount int) {
+
+	//loads the certs
 	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//initializes the client
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -92,7 +88,9 @@ func getNamespaceCount() (namespaceCount int) {
 		},
 	}
 
-	resp, err := client.Get(kube_url + "/api/v1/namespaces")
+	//calls the api endpoint for namespaces
+	apiEndpoint := "/api/v1/namespaces"
+	resp, err := client.Get(kube_url + apiEndpoint)
 
 	if err != nil {
 		log.Fatal(err)
@@ -100,6 +98,7 @@ func getNamespaceCount() (namespaceCount int) {
 
 	defer resp.Body.Close()
 
+	//continues if the HTTP status code is ok
 	if resp.StatusCode == http.StatusOK {
 
 		bodyBytes, err := io.ReadAll(resp.Body)
@@ -110,22 +109,26 @@ func getNamespaceCount() (namespaceCount int) {
 
 		bodyString := string(bodyBytes)
 
-		//managedFields only appears once per node in the json file you get when calling the url, so it is getting used to get the namespace count
+		//managedFields only appears once per namespace in the json file you get when calling the url, so it is getting used to get the namespace count
 		namespaceCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		log.Println("Connection error while fetching namespaces")
+		//when connection to API fails,logs error containing the full endpoint URL
+		log.Println("Connection error:", kube_url+apiEndpoint)
 	}
 
 	return namespaceCount
 }
 
 func getPodCount() (podCount int) {
+
+	//loads certificates needed for HTTP client
 	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//initializes HTTP client
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -134,14 +137,18 @@ func getPodCount() (podCount int) {
 		},
 	}
 
-	resp, err := client.Get(kube_url + "/api/v1/pods")
+	//calls the API endpoint for pods
+	apiEndpoint := "/api/v1/pods"
+	resp, err := client.Get(kube_url + apiEndpoint)
 
+	//errors out if that fails
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer resp.Body.Close()
 
+	//continues if the HTTP status code is ok
 	if resp.StatusCode == http.StatusOK {
 
 		bodyBytes, err := io.ReadAll(resp.Body)
@@ -156,19 +163,22 @@ func getPodCount() (podCount int) {
 		podCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		log.Println("connection error while fetching pods")
+		//logs an error containing the full API URL if the connection fails
+		log.Println("connection error:", kube_url+apiEndpoint)
 	}
 
 	return podCount
 }
 
-func getDistro() (gitVersion string, majorVersion string, minorVersion string, distro string) {
+func getDistro() (majorVersion string, minorVersion string, distro string) {
 
+	//loads the certificates required
 	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//initializes the HTTP client with the certificates provided
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -177,20 +187,15 @@ func getDistro() (gitVersion string, majorVersion string, minorVersion string, d
 		},
 	}
 
-	resp, err := client.Get(kube_url + "/version")
+	apiEndpoint := "/version"
+	resp, err := client.Get(kube_url + apiEndpoint)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer resp.Body.Close()
 
-	/*
-		var gitVersion string
-		var majorVersion string
-		var minorVersion string
-		var distro string
-	*/
-
+	//continues if the HTTP status code is ok
 	if resp.StatusCode == http.StatusOK {
 
 		bodyBytes, err := io.ReadAll(resp.Body)
@@ -200,34 +205,41 @@ func getDistro() (gitVersion string, majorVersion string, minorVersion string, d
 		}
 
 		bodyString := string(bodyBytes)
-		gitVersionRaw := gjson.Get(bodyString, "gitVersion")
 
-		major_raw := gjson.Get(bodyString, "major")
-		minor_raw := gjson.Get(bodyString, "minor")
+		//parses the field "gitVersion" with the git version the kubernetes distribution uses
+		//this can be used to detect which distro you are running
+		//this needs to get converted into a string again, thats why theres a .String() at the end
+		gitVersion := gjson.Get(bodyString, "gitVersion").String()
 
-		if strings.Contains(gitVersionRaw.String(), "k3s") {
+		//parses the field "major" containing the major Kubernetes Version
+		majorVersion = gjson.Get(bodyString, "major").String()
+		minorVersion = gjson.Get(bodyString, "minor").String()
+
+		if strings.Contains(gitVersion, "k3s") {
+			//currently only detection for k3s is implemented
 			distro = "k3s"
 		} else {
+			//it assumes that every Kubernetes distro that doesn't have k3s in their git version is normal Kubernetes
 			distro = "k8s"
 		}
 
-		gitVersion = gitVersionRaw.String()
-		majorVersion = major_raw.String()
-		minorVersion = minor_raw.String()
-
 	} else {
-		log.Println("Connection error while fetching Kubernetes version")
+		//errors out when the /version endpoint can't be reached
+		log.Println("Connection error:", kube_url+apiEndpoint)
 	}
-	return gitVersion, majorVersion, minorVersion, distro
+	return majorVersion, minorVersion, distro
 
 }
 
 func getUsedIngress() (ingressUsed string) {
+
+	//loads the client certificates
 	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//initializes the client with the client certificates from above
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -236,39 +248,60 @@ func getUsedIngress() (ingressUsed string) {
 		},
 	}
 
-	respCouldContainTraefik, err := client.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
-	respCouldContainNginx, err := client.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
+	//the detection methods for nginx and traefik are different because Traefik ingresses aren't defined with the normal networking api, they use a CRD
 
-	if err != nil {
+	//to detect a traefik install, all CRDs get fetched
+	respCouldContainTraefik, traefikErr := client.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+
+	//to detect a Nginx-Ingress install, all ingressclasses get fetched
+	respCouldContainNginx, nginxErr := client.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
+
+	//errors out if any of the requests fail
+	if traefikErr != nil {
+		log.Fatal(err)
+	}
+
+	if nginxErr != nil {
 		log.Fatal(err)
 	}
 
 	defer respCouldContainTraefik.Body.Close()
 	defer respCouldContainNginx.Body.Close()
 
-	if respCouldContainTraefik.StatusCode == http.StatusOK {
+	//only continues if both request return a HTTP status code 200
+	if respCouldContainTraefik.StatusCode == http.StatusOK && respCouldContainNginx.StatusCode == http.StatusOK {
 
-		couldContainTraefik, err := io.ReadAll(respCouldContainTraefik.Body)
-		couldContainNginx, err := io.ReadAll(respCouldContainNginx.Body)
+		couldContainTraefik, errTraefik := io.ReadAll(respCouldContainTraefik.Body)
+		couldContainNginx, errNginx := io.ReadAll(respCouldContainNginx.Body)
 
-		if err != nil {
+		if errTraefik != nil {
+			log.Fatal(err)
+		}
+		if errNginx != nil {
 			log.Fatal(err)
 		}
 
-		//managedFields only appears once per node in the json file you get when calling the url, so it is getting used to get the pod count
-		var firstAppend int64
+		//kubefetch can show if you use multiple ingresses, so the string for the ingresses can be composed out of multiple values
+		//the bool first-append is neccesary because if gets used to detect if a comma should be put at the front of the string ingressUsed
+		var firstAppend bool
+
+		firstAppend = true
 
 		if strings.Contains(string(couldContainTraefik), "traefik.containo.us") {
 			ingressUsed = "Traefik"
-			firstAppend = 1
+			firstAppend = false
 		} else {
 		}
 
 		if strings.Contains(string(couldContainNginx), "nginx") {
-			if firstAppend == 1 {
+			//checks if the string ingressUsed has already been appended to
+
+			//if that happens, it will add a comma, otheriwse it won't add one
+			if firstAppend == false {
 				ingressUsed = ingressUsed + ", "
+			} else {
+				firstAppend = true
 			}
-			firstAppend = 1
 			ingressUsed = ingressUsed + "Nginx"
 		} else {
 		}
@@ -280,16 +313,14 @@ func getUsedIngress() (ingressUsed string) {
 
 func assemblingArt() {
 
-	var gitVersion string
+	//initializes all variables
 	var majorVersion string
 	var minorVersion string
 	var distro string
-	gitVersion, majorVersion, minorVersion, distro = getDistro()
+
+	//this initializes the variables that get used for printing the info
 	var distroArt [17]string
 	var asciiArtColor string
-	if false == true {
-		println(gitVersion)
-	}
 
 	if distro == "k8s" {
 
@@ -359,6 +390,8 @@ func assemblingArt() {
 	var podCount = getPodCount()
 	var namespaceCount = getNamespaceCount()
 	var ingressUsed = getUsedIngress()
+	majorVersion, minorVersion, distro = getDistro()
+	//fetch all values from the various functions above
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
 	print("\033[" + asciiArtColor + ";1mDistro: \033[0m")
