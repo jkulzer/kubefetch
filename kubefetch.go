@@ -10,17 +10,46 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var kube_url = "http://localhost:8001"
+var kube_url = "https://localhost:38045"
+
+/*
+func initClient() {
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+}
+*/
 
 func main() {
-	getDistro()
-
+	assemblingArt()
 }
 
 // gets the amount of nodes in the cluster
 func getNodeCount() (nodeCount int) {
 
-	resp, err := http.Get(kube_url + "/api/v1/nodes")
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	resp, err := client.Get(kube_url + "/api/v1/nodes")
 
 	if err != nil {
 		log.Fatal(err)
@@ -42,7 +71,7 @@ func getNodeCount() (nodeCount int) {
 		nodeCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		print("connection error")
+		log.Println("Connection error while fetching nodes")
 	}
 
 	return nodeCount
@@ -50,8 +79,20 @@ func getNodeCount() (nodeCount int) {
 
 // gets the amount of nodes in the cluster
 func getNamespaceCount() (namespaceCount int) {
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	resp, err := http.Get(kube_url + "/api/v1/namespaces")
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	resp, err := client.Get(kube_url + "/api/v1/namespaces")
 
 	if err != nil {
 		log.Fatal(err)
@@ -73,15 +114,27 @@ func getNamespaceCount() (namespaceCount int) {
 		namespaceCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		print("connection error")
+		log.Println("Connection error while fetching namespaces")
 	}
 
 	return namespaceCount
 }
 
 func getPodCount() (podCount int) {
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	resp, err := http.Get(kube_url + "/api/v1/pods")
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	resp, err := client.Get(kube_url + "/api/v1/pods")
 
 	if err != nil {
 		log.Fatal(err)
@@ -103,20 +156,40 @@ func getPodCount() (podCount int) {
 		podCount = strings.Count(bodyString, "managedFields")
 
 	} else {
-		print("connection error")
+		log.Println("connection error while fetching pods")
 	}
 
 	return podCount
 }
 
-func getDistro() {
+func getDistro() (gitVersion string, majorVersion string, minorVersion string, distro string) {
 
-	resp, err := http.Get(kube_url + "/version")
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	resp, err := client.Get(kube_url + "/version")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer resp.Body.Close()
+
+	/*
+		var gitVersion string
+		var majorVersion string
+		var minorVersion string
+		var distro string
+	*/
 
 	if resp.StatusCode == http.StatusOK {
 
@@ -127,29 +200,44 @@ func getDistro() {
 		}
 
 		bodyString := string(bodyBytes)
-		kube_version := gjson.Get(bodyString, "gitVersion")
+		gitVersionRaw := gjson.Get(bodyString, "gitVersion")
 
-		major_version := gjson.Get(bodyString, "major")
-		minor_version := gjson.Get(bodyString, "minor")
+		major_raw := gjson.Get(bodyString, "major")
+		minor_raw := gjson.Get(bodyString, "minor")
 
-		var distro string
-
-		if strings.Contains(kube_version.String(), "k3s") {
+		if strings.Contains(gitVersionRaw.String(), "k3s") {
 			distro = "k3s"
 		} else {
 			distro = "k8s"
 		}
 
-		assemblingArt(distro, kube_version.String(), major_version.String(), minor_version.String())
+		gitVersion = gitVersionRaw.String()
+		majorVersion = major_raw.String()
+		minorVersion = minor_raw.String()
+
 	} else {
-		print("connection error")
+		log.Println("Connection error while fetching Kubernetes version")
 	}
+	return gitVersion, majorVersion, minorVersion, distro
 
 }
 
 func getUsedIngress() (ingressUsed string) {
-	respCouldContainTraefik, err := http.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
-	respCouldContainNginx, err := http.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
+	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	respCouldContainTraefik, err := client.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
+	respCouldContainNginx, err := client.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
 
 	if err != nil {
 		log.Fatal(err)
@@ -190,9 +278,18 @@ func getUsedIngress() (ingressUsed string) {
 
 }
 
-func assemblingArt(distro string, kube_version string, major_version string, minor_version string) {
+func assemblingArt() {
+
+	var gitVersion string
+	var majorVersion string
+	var minorVersion string
+	var distro string
+	gitVersion, majorVersion, minorVersion, distro = getDistro()
 	var distroArt [17]string
 	var asciiArtColor string
+	if false == true {
+		println(gitVersion)
+	}
 
 	if distro == "k8s" {
 
@@ -270,7 +367,7 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[1] + "\033[0m")
 	print("\033[" + asciiArtColor + ";1mVersion: \033[0m")
-	print(major_version, ".", minor_version)
+	print(majorVersion, ".", minorVersion)
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[2] + "\033[0m")
@@ -316,21 +413,4 @@ func assemblingArt(distro string, kube_version string, major_version string, min
 	print("\033[" + asciiArtColor + ";1m" + distroArt[16] + "\033[0m")
 	print("\n")
 	print("")
-}
-
-func readCerts() {
-
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
-	if err != nil {
-		log.Fatal(err)
-	}
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-	resp, err := client.Get("https://localhost:38045" + "/api/v1/nodes")
-
 }
