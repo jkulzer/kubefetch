@@ -317,6 +317,7 @@ func assemblingArt() {
 	var majorVersion string
 	var minorVersion string
 	var distro string
+	majorVersion, minorVersion, distro = getDistro()
 
 	//this initializes the variables that get used for printing the info
 	var distroArt [17]string
@@ -390,7 +391,6 @@ func assemblingArt() {
 	var podCount = getPodCount()
 	var namespaceCount = getNamespaceCount()
 	var ingressUsed = getUsedIngress()
-	majorVersion, minorVersion, distro = getDistro()
 	//fetch all values from the various functions above
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
