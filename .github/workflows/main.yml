@@ -1,5 +1,8 @@
 name: Build kubefetch
-on: [push]
+on:
+  push:
+    tags:
+      - "v*"
 jobs:
   build:
 
@@ -16,8 +19,6 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
           title: "kubefetch automatic release"
           files: |
             kubefetch
