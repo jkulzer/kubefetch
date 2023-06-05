@@ -1,9 +1,0 @@
-kind: pipeline
-type: kubernetes
-name: default
-
-steps:
-- name: test
-  image: golang:latest
-  commands:
-  - go run ./kubefetch.go
