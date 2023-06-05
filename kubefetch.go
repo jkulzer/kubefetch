@@ -150,19 +150,61 @@ func getContainerRuntimeInterface() (string, error) {
 
 }
 
+func getStorage() (string, error) {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Retrieve the CRI information from the node status
+	storageClassList, err := clientset.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	// Check if "longhorn-system" namespace exists
+	storageUsed := "No Storage detected"
+	for _, storageclass := range storageClassList.Items {
+		if storageclass.Name == "longhorn" {
+			storageUsed = "Longhorn"
+		} else if strings.Contains(storageclass.Name, "rook") {
+			storageUsed = "Rook/Ceph"
+		} else {
+			storageUsed = storageUsed + ""
+		}
+	}
+
+	return storageUsed, nil
+
+}
+
 func printArt() {
 
-	//initializes all variables
+	//gets kubernetes version
 	version, err := getKubeVersion()
 	if err != nil {
 		panic(err.Error())
 	}
 
+	//gets kubernetes distro
 	var distro string
 	if strings.Contains(version, "k3s") {
 		distro = "K3s"
 	} else {
 		distro = "K8s"
+	}
+
+	//gets storage solution used
+	storage, err := getStorage()
+	if err != nil {
+		panic(err.Error())
 	}
 
 	//gets container runtime interface
@@ -277,7 +319,10 @@ func printArt() {
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mStorage: \033[0m")
+	print(storage)
 	print("\n")
+
 	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")
 	print("\n")
 	print("\033[" + asciiArtColor + ";1m" + distroArt[8] + "\033[0m")

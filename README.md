@@ -83,7 +83,7 @@ Neofetch for Kubernetes Clusters
 - [ ] More displayed info
 	- [ ] CNI used
 	- [x] CRI used
-	- [ ] Storage Solution used
+	- [x] Storage Solution used
 
 See the [open issues](https://github.com/jkulzer/kubefetch/issues) for a full list of proposed features (and known issues).
 
