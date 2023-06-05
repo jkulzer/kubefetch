@@ -68,12 +68,16 @@ Neofetch for Kubernetes Clusters
     ```
 
 2. Build and install the binary
-    ```
+    ```sh
     make build
-    make install
+    sudo make install
     ```
 
-
+3. To uninstall, run:
+    ```
+    sudo make uninstall
+    make clean
+    ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
