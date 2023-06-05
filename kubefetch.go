@@ -1,329 +1,149 @@
 package main
 
 import (
-	"crypto/tls"
-	"io"
-	"log"
-	"net/http"
+	"context"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/tidwall/gjson"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-var kube_url = "https://localhost:38045"
-
 func main() {
-	assemblingArt()
+
+	printArt()
 }
 
-// gets the amount of nodes in the cluster
-func getNodeCount() (nodeCount int) {
+func getKubeconfig() (*rest.Config, error) {
+	// Get the path to the kubeconfig file
+	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
-	//loads certificate
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	// Build the client config from the kubeconfig file
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	//initializes client
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-
-	//the apiEndpoint gets declared as a variable to ease logging
-	apiEndpoint := "/api/v1/nodes"
-
-	//fetches data about nodes
-	resp, err := client.Get(kube_url + apiEndpoint)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer resp.Body.Close()
-
-	//continues if HTTP status code is ok, logs an error otherwise
-	if resp.StatusCode == http.StatusOK {
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bodyString := string(bodyBytes)
-
-		//managedFields only appears once per node in the json file you get when calling the url, so it is getting used to get the node count
-		nodeCount = strings.Count(bodyString, "managedFields")
-
-	} else {
-		//logs the error
-		log.Println("Connection error:", kube_url+apiEndpoint)
-	}
-
-	//returns the node count
-	//the functions output gets used somewhere else
-	return nodeCount
+	return config, nil
 }
 
-// gets the amount of nodes in the cluster
-func getNamespaceCount() (namespaceCount int) {
+func getPodCount(podCount *int) {
 
-	//loads the certs
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	// create the clientset
+	config, err := getKubeconfig()
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	//initializes the client
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-
-	//calls the api endpoint for namespaces
-	apiEndpoint := "/api/v1/namespaces"
-	resp, err := client.Get(kube_url + apiEndpoint)
-
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	defer resp.Body.Close()
-
-	//continues if the HTTP status code is ok
-	if resp.StatusCode == http.StatusOK {
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bodyString := string(bodyBytes)
-
-		//managedFields only appears once per namespace in the json file you get when calling the url, so it is getting used to get the namespace count
-		namespaceCount = strings.Count(bodyString, "managedFields")
-
-	} else {
-		//when connection to API fails,logs error containing the full endpoint URL
-		log.Println("Connection error:", kube_url+apiEndpoint)
+	//for {
+	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
 	}
 
-	return namespaceCount
+	// Get the number of pods
+	*podCount = len(pods.Items)
 }
 
-func getPodCount() (podCount int) {
+func getNamespaceCount(namespaceCount *int) {
 
-	//loads certificates needed for HTTP client
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	// create the clientset
+	config, err := getKubeconfig()
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	//initializes HTTP client
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-
-	//calls the API endpoint for pods
-	apiEndpoint := "/api/v1/pods"
-	resp, err := client.Get(kube_url + apiEndpoint)
-
-	//errors out if that fails
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	defer resp.Body.Close()
-
-	//continues if the HTTP status code is ok
-	if resp.StatusCode == http.StatusOK {
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bodyString := string(bodyBytes)
-
-		//managedFields only appears once per node in the json file you get when calling the url, so it is getting used to get the pod count
-		podCount = strings.Count(bodyString, "managedFields")
-
-	} else {
-		//logs an error containing the full API URL if the connection fails
-		log.Println("connection error:", kube_url+apiEndpoint)
+	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
 	}
 
-	return podCount
+	// Get the number of pods
+	*namespaceCount = len(namespaces.Items)
 }
 
-func getDistro() (majorVersion string, minorVersion string, distro string) {
+func getNodeCount(nodeCount *int) {
 
-	//loads the certificates required
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	// create the clientset
+	config, err := getKubeconfig()
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	//initializes the HTTP client with the certificates provided
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-
-	apiEndpoint := "/version"
-	resp, err := client.Get(kube_url + apiEndpoint)
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	defer resp.Body.Close()
-
-	//continues if the HTTP status code is ok
-	if resp.StatusCode == http.StatusOK {
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bodyString := string(bodyBytes)
-
-		//parses the field "gitVersion" with the git version the kubernetes distribution uses
-		//this can be used to detect which distro you are running
-		//this needs to get converted into a string again, thats why theres a .String() at the end
-		gitVersion := gjson.Get(bodyString, "gitVersion").String()
-
-		//parses the field "major" containing the major Kubernetes Version
-		majorVersion = gjson.Get(bodyString, "major").String()
-		minorVersion = gjson.Get(bodyString, "minor").String()
-
-		if strings.Contains(gitVersion, "k3s") {
-			//currently only detection for k3s is implemented
-			distro = "k3s"
-		} else {
-			//it assumes that every Kubernetes distro that doesn't have k3s in their git version is normal Kubernetes
-			distro = "k8s"
-		}
-
-	} else {
-		//errors out when the /version endpoint can't be reached
-		log.Println("Connection error:", kube_url+apiEndpoint)
+	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
 	}
-	return majorVersion, minorVersion, distro
 
+	// Get the number of nodes
+	*nodeCount = len(nodes.Items)
 }
 
-func getUsedIngress() (ingressUsed string) {
+func getKubeVersion() (string, error) {
 
-	//loads the client certificates
-	cert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
+	// create the clientset
+	config, err := getKubeconfig()
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
 
-	//initializes the client with the client certificates from above
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			},
-		},
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
 	}
 
-	//the detection methods for nginx and traefik are different because Traefik ingresses aren't defined with the normal networking api, they use a CRD
-
-	//to detect a traefik install, all CRDs get fetched
-	respCouldContainTraefik, traefikErr := client.Get(kube_url + "/apis/apiextensions.k8s.io/v1/customresourcedefinitions")
-
-	//to detect a Nginx-Ingress install, all ingressclasses get fetched
-	respCouldContainNginx, nginxErr := client.Get(kube_url + "/apis/networking.k8s.io/v1/ingressclasses")
-
-	//errors out if any of the requests fail
-	if traefikErr != nil {
-		log.Fatal(err)
+	// Get the server version
+	version, err := clientset.Discovery().ServerVersion()
+	if err != nil {
+		return "", err
 	}
 
-	if nginxErr != nil {
-		log.Fatal(err)
-	}
-
-	defer respCouldContainTraefik.Body.Close()
-	defer respCouldContainNginx.Body.Close()
-
-	//only continues if both request return a HTTP status code 200
-	if respCouldContainTraefik.StatusCode == http.StatusOK && respCouldContainNginx.StatusCode == http.StatusOK {
-
-		couldContainTraefik, errTraefik := io.ReadAll(respCouldContainTraefik.Body)
-		couldContainNginx, errNginx := io.ReadAll(respCouldContainNginx.Body)
-
-		if errTraefik != nil {
-			log.Fatal(err)
-		}
-		if errNginx != nil {
-			log.Fatal(err)
-		}
-
-		//kubefetch can show if you use multiple ingresses, so the string for the ingresses can be composed out of multiple values
-		//the bool first-append is neccesary because if gets used to detect if a comma should be put at the front of the string ingressUsed
-		var firstAppend bool
-
-		firstAppend = true
-
-		if strings.Contains(string(couldContainTraefik), "traefik.containo.us") {
-			ingressUsed = "Traefik"
-			firstAppend = false
-		} else {
-		}
-
-		if strings.Contains(string(couldContainNginx), "nginx") {
-			//checks if the string ingressUsed has already been appended to
-
-			//if that happens, it will add a comma, otheriwse it won't add one
-			if firstAppend == false {
-				ingressUsed = ingressUsed + ", "
-			} else {
-				firstAppend = true
-			}
-			ingressUsed = ingressUsed + "Nginx"
-		} else {
-		}
-
-	}
-	return ingressUsed
-
+	return version.String(), nil
 }
 
-func assemblingArt() {
+func printArt() {
 
 	//initializes all variables
-	var majorVersion string
-	var minorVersion string
+	version, err := getKubeVersion()
+	if err != nil {
+		panic(err.Error())
+	}
 	var distro string
-	majorVersion, minorVersion, distro = getDistro()
+	if strings.Contains(version, "k3s") {
+		distro = "K3s"
+	} else {
+		distro = "K8s"
+	}
+	//majorVersion, minorVersion, distro = getDistro()
 
 	//this initializes the variables that get used for printing the info
 	var distroArt [17]string
 	var asciiArtColor string
+	var podCount int
+	var namespaceCount int
+	var nodeCount int
 
-	if distro == "k8s" {
+	if distro == "K8s" {
 
 		distroArt[0] = "		0MMMNNMMMO               	"
 		distroArt[1] = "          .MMMWKko:::cokKWMMM.          	"
@@ -344,7 +164,7 @@ func assemblingArt() {
 		distroArt[16] = "          kklcccccccccccccclOx          	"
 		asciiArtColor = "34"
 
-	} else if distro == "k3s" {
+	} else if distro == "K3s" {
 
 		distroArt[0] = " .kWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk.  	"
 		distroArt[1] = ":WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWc	"
@@ -387,10 +207,9 @@ func assemblingArt() {
 		asciiArtColor = "34"
 	}
 
-	var nodeCount = getNodeCount()
-	var podCount = getPodCount()
-	var namespaceCount = getNamespaceCount()
-	var ingressUsed = getUsedIngress()
+	getNodeCount(&nodeCount)
+	getPodCount(&podCount)
+	getNamespaceCount(&namespaceCount)
 	//fetch all values from the various functions above
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
@@ -400,7 +219,7 @@ func assemblingArt() {
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[1] + "\033[0m")
 	print("\033[" + asciiArtColor + ";1mVersion: \033[0m")
-	print(majorVersion, ".", minorVersion)
+	print(version)
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[2] + "\033[0m")
@@ -419,10 +238,7 @@ func assemblingArt() {
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[5] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mIngress: \033[0m")
-	print(ingressUsed)
 	print("\n")
-
 	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
 	print("\n")
 	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")
