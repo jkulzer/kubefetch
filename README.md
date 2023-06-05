@@ -82,7 +82,7 @@ Neofetch for Kubernetes Clusters
 - [ ] AUR package
 - [ ] More displayed info
 	- [ ] CNI used
-	- [ ] CRI used
+	- [x] CRI used
 	- [ ] Storage Solution used
 
 See the [open issues](https://github.com/jkulzer/kubefetch/issues) for a full list of proposed features (and known issues).
