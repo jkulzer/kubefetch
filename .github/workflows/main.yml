@@ -2,7 +2,7 @@ name: Build kubefetch
 on:
   push:
     tags:
-      - "v*"
+      - "*"
 jobs:
   build:
 
