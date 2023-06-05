@@ -1,16 +1,3 @@
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-<!-- [![Contributors][contributors-shield]][contributors-url] -->
-
-
-<!-- PROJECT LOGO -->
 <br />
 <div align="center">
     <img src="https://cncf-branding.netlify.app/img/projects/kubernetes/icon/color/kubernetes-icon-color.svg" alt="Logo" width="80" height="80">
@@ -56,21 +43,13 @@
   </ol>
 </details>
 
-
-
-<!-- ABOUT THE PROJECT -->
-## About The Project
-
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-This is only visible in my local network, it shows the build progress on my own Drone server.
-[![Build Status](https://drone.kube.home/api/badges/johannes/kubefetch/status.svg)](https://drone.kube.home/johannes/kubefetch)
-
-
 ### Uses:
 
-Neofetch for Kubernetes
+Neofetch for Kubernetes Clusters
+
+<br>
+
+![](https://github.com/jkulzer/kubefetch/blob/main/kubefetch.png?raw=true)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -81,23 +60,20 @@ Neofetch for Kubernetes
 
 ### Installation
 
-0. Disclaimer:
-This is still in active development and isn't stable. There is currently no good way to distribute or instal it.
-
-1. With go run
+1. With `make`
+    Clone the repo
     ```sh
-    go run ./kubefetch.go
+    git clone https://github.com/jkulzer/kubefetch
+    cd kubefetch
+    ```
+
+2. Build and install the binary
+    ```
+    make build
+    make install
     ```
 
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-TODO
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -106,7 +82,8 @@ TODO
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Auth via kubeconfig
+- [x] Auth via kubeconfig
+- [ ] AUR package
 - [ ] More displayed info
 	- [ ] CNI used
 	- [ ] CRI used
@@ -141,8 +118,3 @@ Project Link: [https://github.com/jkulzer/kubefetch](https://github.com/jkulzer/
 * [k8s@home](https://k8s-at-home.com/)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
