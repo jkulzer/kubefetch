@@ -20,5 +20,6 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           title: "kubefetch automatic release"
+          prerelease: false
           files: |
             kubefetch
