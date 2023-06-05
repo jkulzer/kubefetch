@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -121,6 +121,35 @@ func getKubeVersion() (string, error) {
 	return version.String(), nil
 }
 
+func getContainerRuntimeInterface() (string, error) {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Retrieve the CRI information from the node status
+	nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(nodeList.Items) == 0 {
+		return "", fmt.Errorf("no nodes found")
+	}
+
+	cri := nodeList.Items[0].Status.NodeInfo.ContainerRuntimeVersion
+
+	return cri, nil
+
+}
+
 func printArt() {
 
 	//initializes all variables
@@ -128,15 +157,20 @@ func printArt() {
 	if err != nil {
 		panic(err.Error())
 	}
+
 	var distro string
 	if strings.Contains(version, "k3s") {
 		distro = "K3s"
 	} else {
 		distro = "K8s"
 	}
-	//majorVersion, minorVersion, distro = getDistro()
 
-	//this initializes the variables that get used for printing the info
+	//gets container runtime interface
+	containerRuntimeInterface, err := getContainerRuntimeInterface()
+	if err != nil {
+		panic(err.Error())
+	}
+
 	var distroArt [17]string
 	var asciiArtColor string
 	var podCount int
@@ -238,7 +272,10 @@ func printArt() {
 	print("\n")
 
 	print("\033[" + asciiArtColor + ";1m" + distroArt[5] + "\033[0m")
+	print("\033[" + asciiArtColor + ";1mContainer Runtime Interface: \033[0m")
+	print(containerRuntimeInterface)
 	print("\n")
+
 	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
 	print("\n")
 	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")
