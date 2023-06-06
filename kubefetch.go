@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	//command-line flags
-	//"flag"
+	"flag"
 
 	//allows converting from ints to strings
 	"strconv"
@@ -32,8 +32,17 @@ var asciiArtFile embed.FS
 
 func main() {
 
-	printArt()
+	versionFlag := flag.Bool("version", false, "Print the version")
+	flag.Parse()
 
+	if *versionFlag {
+		fmt.Println("0.5.2")
+		return
+	} else {
+
+		printArt()
+
+	}
 }
 
 func getKubeconfig() (*rest.Config, error) {
