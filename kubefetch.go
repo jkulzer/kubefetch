@@ -18,6 +18,7 @@ import (
 	"io/fs"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/rest"
@@ -201,16 +202,33 @@ func getStorage() (string, error) {
 
 }
 
-func getApiServerHostname() string {
+func getKubernetesEndpointPort() int {
 	// create the clientset
 	config, err := getKubeconfig()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	host := config.Host
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 
-	return host
+	endpoint, err := clientset.CoreV1().Endpoints("default").Get(context.TODO(), "kubernetes", v1.GetOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var portNumber int
+	// Accessing the ports exposed by the Endpoint
+	for _, subset := range endpoint.Subsets {
+		for _, port := range subset.Ports {
+			// Accessing port.Port
+			portNumber = int(port.Port)
+		}
+	}
+
+	return portNumber
 }
 
 func getGitops() (string, error) {
@@ -264,7 +282,7 @@ func printArt() {
 		panic(err.Error())
 	}
 
-	apiServerHostname := getApiServerHostname()
+	kubernetesEndpointPort := getKubernetesEndpointPort()
 
 	//gets kubernetes distro
 	var distro string
@@ -273,7 +291,7 @@ func printArt() {
 	} else {
 
 		//microk8s usually uses the apiServer port 16443
-		if strings.Contains(apiServerHostname, "16443") {
+		if kubernetesEndpointPort == 16443 {
 			distro = "MicroK8s"
 		} else {
 			distro = "K8s"
