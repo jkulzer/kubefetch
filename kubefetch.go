@@ -7,6 +7,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	//command-line flags
+	//"flag"
+
+	//allows converting from ints to strings
+	"strconv"
+
+	//allows the ascii art to be stored in the binary itself
+	"embed"
+	"io/fs"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -14,9 +24,15 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// this embeds the assets in the 'assets' folders
+//
+//go:embed assets
+var asciiArtFile embed.FS
+
 func main() {
 
 	printArt()
+
 }
 
 func getKubeconfig() (*rest.Config, error) {
@@ -185,20 +201,84 @@ func getStorage() (string, error) {
 
 }
 
-func printArt() {
+func getApiServerHostname() string {
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
 
+	host := config.Host
+
+	return host
+}
+
+func getGitops() (string, error) {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Retrieve the list of namespaces to find out if Flux or ArgoCD namespaces exist
+	namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	var hasFlux, hasArgoCD bool // Flags to track namespace detection
+
+	for _, namespace := range namespaceList.Items {
+		if namespace.Name == "flux-system" {
+			hasFlux = true
+		} else if strings.Contains(namespace.Name, "argocd") {
+			hasArgoCD = true
+		}
+	}
+
+	var gitopsToolUsed string
+
+	if hasFlux && hasArgoCD {
+		gitopsToolUsed = "Argo CD + Flux"
+	} else if hasFlux {
+		gitopsToolUsed = "Flux"
+	} else if hasArgoCD {
+		gitopsToolUsed = "Argo CD"
+	} else {
+		gitopsToolUsed = "No GitOps tool used"
+	}
+
+	return gitopsToolUsed, nil
+}
+
+func printArt() {
 	//gets kubernetes version
 	version, err := getKubeVersion()
 	if err != nil {
 		panic(err.Error())
 	}
 
+	apiServerHostname := getApiServerHostname()
+
 	//gets kubernetes distro
 	var distro string
 	if strings.Contains(version, "k3s") {
 		distro = "K3s"
 	} else {
-		distro = "K8s"
+
+		//microk8s usually uses the apiServer port 16443
+		if strings.Contains(apiServerHostname, "16443") {
+			distro = "MicroK8s"
+		} else {
+			distro = "K8s"
+		}
+
 	}
 
 	//gets storage solution used
@@ -213,135 +293,71 @@ func printArt() {
 		panic(err.Error())
 	}
 
-	var distroArt [17]string
+	gitopsTool, err := getGitops()
+	if err != nil {
+		panic(err.Error())
+	}
+
 	var asciiArtColor string
 	var podCount int
 	var namespaceCount int
 	var nodeCount int
-
-	if distro == "K8s" {
-
-		distroArt[0] = "		0MMMNNMMMO               	"
-		distroArt[1] = "          .MMMWKko:::cokKWMMM.          	"
-		distroArt[2] = "      dMMMN0xl:::::cc:::::lx0NMMMo      	"
-		distroArt[3] = "    0MXkdc:::::::::K0:::::::::cdOXMO    	"
-		distroArt[4] = "   'MO::::::::::codXXdoc::::::::::0M.   	"
-		distroArt[5] = "   OWc:::oXkclONWX0MM0XWXklckXl:::cMk   	"
-		distroArt[6] = "  .MO::::::dMMWx::cMM:::kMMMd::::::0M.  	"
-		distroArt[7] = "  OMc::::::XMkKMNkkMMkONM0kMX::::::lMx  	"
-		distroArt[8] = " .MO::::::xMO::cKMM00MMKc::0Md::::::0M. 	"
-		distroArt[9] = " kMc::::::OMX0XWMMWdxWMMWX0XMk::::::lMx 	"
-		distroArt[10] = " M0::::kKOOWMkolcXMWWMXclokMWkOKk::::KM 	"
-		distroArt[11] = " .No:::::::lNWxcOMKccXMkckWNl:::::::oN. 	"
-		distroArt[12] = "   c0c:::::::xXWMWxddxWMWXx:::::::c0:   	"
-		distroArt[13] = "     Ox:::::::lWkkO00OkkWl:::::::kk     	"
-		distroArt[14] = "       Xo::::cKd::::::::xK:::::oN       	"
-		distroArt[15] = "        :0c::::::::::::::::::lK,        	"
-		distroArt[16] = "          kklcccccccccccccclOx          	"
-		asciiArtColor = "34"
-
-	} else if distro == "K3s" {
-
-		distroArt[0] = " .kWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWk.  	"
-		distroArt[1] = ":WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWc	"
-		distroArt[2] = "WMMMMMMMMMMMMMMMMM    MMMMMMMMMMMMMMMMMM	"
-		distroArt[3] = "WMMMMMMMMMMMMMMMMX    MMMMMMMMMMMMMMMMMM	"
-		distroArt[4] = "WMMMMMMMMMMMMMMMMK    MMMMMMMMMMMMMMMMMM	"
-		distroArt[5] = "WMMMMMMMMMMMMMMMMK    MMMMMMMMMMMMMMMMMM	"
-		distroArt[6] = "WMMMMMMMMMMMMMMMMK    MMMMMMMMMMMMMMMMMM	"
-		distroArt[7] = "WMMMMMMMMMMMMMMMMW    MMMMMMMMMMMMMMMMMM	"
-		distroArt[8] = "WMMMMMMMMMMMMMMMMMW00WMMMMMMMMMMMMMMMMMM	"
-		distroArt[9] = "WMMMMMMMMMMMMM   lMMMMc   MMMMMMMMMMMMMM	"
-		distroArt[10] = "WMMMMMMMMM.       MMMM       .MMMMMMMMMM	"
-		distroArt[11] = "WMMMMMx        'lXMMMMKl.        kMMMMMM	"
-		distroArt[12] = "WMMMMM     .cOWMMMMMMMMMMWkc.    .MMMMMM	"
-		distroArt[13] = "XMMMMMXlcxNMMMMMMMMMMMMMMMMMMNxclXMMMMMN	"
-		distroArt[14] = " oMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMo 	"
-		distroArt[15] = "    ''''''''''''''''''''''''''''''''    	"
-		distroArt[16] = "										 	"
-		asciiArtColor = "93"
-
-	} else {
-
-		distroArt[0] = "		0MMMNNMMMO               	"
-		distroArt[1] = "          .MMMWKko:::cokKWMMM.          	"
-		distroArt[2] = "      dMMMN0xl:::::cc:::::lx0NMMMo      	"
-		distroArt[3] = "    0MXkdc:::::::::K0:::::::::cdOXMO    	"
-		distroArt[4] = "   'MO::::::::::codXXdoc::::::::::0M.   	"
-		distroArt[5] = "   OWc:::oXkclONWX0MM0XWXklckXl:::cMk   	"
-		distroArt[6] = "  .MO::::::dMMWx::cMM:::kMMMd::::::0M.  	"
-		distroArt[7] = "  OMc::::::XMkKMNkkMMkONM0kMX::::::lMx  	"
-		distroArt[8] = " .MO::::::xMO::cKMM00MMKc::0Md::::::0M. 	"
-		distroArt[9] = " kMc::::::OMX0XWMMWdxWMMWX0XMk::::::lMx 	"
-		distroArt[10] = " M0::::kKOOWMkolcXMWWMXclokMWkOKk::::KM 	"
-		distroArt[11] = " .No:::::::lNWxcOMKccXMkckWNl:::::::oN. 	"
-		distroArt[12] = "   c0c:::::::xXWMWxddxWMWXx:::::::c0:   	"
-		distroArt[13] = "     Ox:::::::lWkkO00OkkWl:::::::kk     	"
-		distroArt[14] = "       Xo::::cKd::::::::xK:::::oN       	"
-		distroArt[15] = "        :0c::::::::::::::::::lK,        	"
-		distroArt[16] = "          kklcccccccccccccclOx          	"
-		asciiArtColor = "34"
-	}
 
 	getNodeCount(&nodeCount)
 	getPodCount(&podCount)
 	getNamespaceCount(&namespaceCount)
 	//fetch all values from the various functions above
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[0] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mDistro: \033[0m")
-	print(distro)
-	print("\n")
+	var red int
+	var green int
+	var blue int
+	if distro == "MicroK8s" {
+		red = 233
+		green = 84
+		blue = 32
+	} else if distro == "K3s" {
+		red = 255
+		green = 198
+		blue = 28
+	} else {
+		red = 50
+		green = 108
+		blue = 229
+	}
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[1] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mVersion: \033[0m")
-	print(version)
-	print("\n")
+	// Generate True Color escape sequence
+	colorCode := fmt.Sprintf("\x1b[38;2;%d;%d;%dm", red, green, blue)
+	resetCode := "\x1b[0m" // Reset color escape sequence
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[2] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mNode Count: \033[0m")
-	print(nodeCount)
-	print("\n")
+	// Read ASCII art from file
+	content, err := fs.ReadFile(asciiArtFile, "assets/"+distro)
+	if err != nil {
+		fmt.Println("Error reading ascii art, should NEVER happen", err)
+		return
+	}
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[3] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mPod Count: \033[0m")
-	print(podCount)
-	print("\n")
+	// Split the ASCII art into lines
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[4] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mNamespace Count: \033[0m")
-	print(namespaceCount)
-	print("\n")
+	// Additional data for each line
+	additionalData := []string{
+		colorCode + asciiArtColor + "    " + "Distro: " + resetCode + distro,
+		colorCode + asciiArtColor + "    " + "Version: " + resetCode + version,
+		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + strconv.Itoa(nodeCount),
+		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount),
+		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
+		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
+		colorCode + asciiArtColor + "    " + "Storage: " + resetCode + storage,
+		colorCode + asciiArtColor + "    " + "GitOps Tool: " + resetCode + gitopsTool,
+	}
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[5] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mContainer Runtime Interface: \033[0m")
-	print(containerRuntimeInterface)
-	print("\n")
+	// Print each line of the ASCII art along with different additional data
+	for i, line := range lines {
+		if i < len(additionalData) {
+			fmt.Println(line, additionalData[i])
+		} else {
+			fmt.Println(line) // If additional data runs out, print only the line
+		}
+	}
 
-	print("\033[" + asciiArtColor + ";1m" + distroArt[6] + "\033[0m")
-	print("\033[" + asciiArtColor + ";1mStorage: \033[0m")
-	print(storage)
-	print("\n")
-
-	print("\033[" + asciiArtColor + ";1m" + distroArt[7] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[8] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[9] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[10] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[11] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[12] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[13] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[14] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[15] + "\033[0m")
-	print("\n")
-	print("\033[" + asciiArtColor + ";1m" + distroArt[16] + "\033[0m")
-	print("\n")
-	print("")
 }
