@@ -3,7 +3,7 @@
     <img src="https://cncf-branding.netlify.app/img/projects/kubernetes/icon/color/kubernetes-icon-color.svg" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">Kubefetch</h3>
+<h1 align="center">Kubefetch</h1>
 
   <p align="center">
     A neofetch-inspired application that displays stats about your Kubernetes cluster.
@@ -16,6 +16,7 @@
 </div>
 
 
+## Feel free to open an issue if your Kubernetes distro or some other aspect does not get recognized!
 
 <!-- TABLE OF CONTENTS -->
 <details>
