@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	//command-line flags
 	"flag"
@@ -17,6 +18,7 @@ import (
 	"embed"
 	"io/fs"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("0.5.2")
+		fmt.Println("0.5.3")
 		return
 	} else {
 
@@ -284,6 +286,42 @@ func getGitops() (string, error) {
 	return gitopsToolUsed, nil
 }
 
+func getNodeAge() (int64, error) {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var oldestNode *corev1.Node
+	var oldestNodeAge time.Time
+
+	for _, node := range nodes.Items {
+		creationTimestamp := node.CreationTimestamp.Time
+		if oldestNode == nil || creationTimestamp.Before(oldestNodeAge) {
+			oldestNode = &node
+			oldestNodeAge = creationTimestamp
+		}
+	}
+	var clusterAge time.Duration
+
+	clusterAge = time.Now().Sub(oldestNodeAge)
+	clusterAgeInDays := int64(clusterAge.Hours() / 24)
+
+	return clusterAgeInDays, nil
+}
+
 func printArt() {
 	//gets kubernetes version
 	version, err := getKubeVersion()
@@ -321,6 +359,10 @@ func printArt() {
 	}
 
 	gitopsTool, err := getGitops()
+	if err != nil {
+		panic(err.Error())
+	}
+	clusterAge, err := getNodeAge()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -376,6 +418,7 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
 		colorCode + asciiArtColor + "    " + "Storage: " + resetCode + storage,
 		colorCode + asciiArtColor + "    " + "GitOps Tool: " + resetCode + gitopsTool,
+		colorCode + asciiArtColor + "    " + "Cluster Age: " + resetCode + fmt.Sprint(clusterAge) + "d",
 	}
 
 	// Print each line of the ASCII art along with different additional data
