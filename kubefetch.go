@@ -105,7 +105,7 @@ func getNamespaceCount(namespaceCount *int) {
 	*namespaceCount = len(namespaces.Items)
 }
 
-func getNodeCount(nodeCount *int) {
+func getNodeCount() (int64, int64) {
 
 	// create the clientset
 	config, err := getKubeconfig()
@@ -124,7 +124,23 @@ func getNodeCount(nodeCount *int) {
 	}
 
 	// Get the number of nodes
-	*nodeCount = len(nodes.Items)
+	nodeCount := len(nodes.Items)
+
+	// Get the total capacity of each node in terms of pods
+	podsPerNode := make([]int, nodeCount)
+	for i, node := range nodes.Items {
+		podsPerNode[i] = int(node.Status.Capacity.Pods().Value())
+	}
+
+	// Get the maximum number of pods in the cluster
+	// this is in the nodeCount function and not in the podCount function because it depends on the count of the nodes
+	// it gets the amount of nodes and loops through every node to get the amount of pods available on the node
+	var maxPods int
+	for _, pods := range podsPerNode {
+		maxPods += pods
+	}
+
+	return int64(nodeCount), int64(maxPods)
 }
 
 func getKubeVersion() (string, error) {
@@ -367,12 +383,15 @@ func printArt() {
 		panic(err.Error())
 	}
 
+	nodeCount, maxPods := getNodeCount()
+	if err != nil {
+		panic(err.Error())
+	}
+
 	var asciiArtColor string
 	var podCount int
 	var namespaceCount int
-	var nodeCount int
 
-	getNodeCount(&nodeCount)
 	getPodCount(&podCount)
 	getNamespaceCount(&namespaceCount)
 	//fetch all values from the various functions above
@@ -412,8 +431,8 @@ func printArt() {
 	additionalData := []string{
 		colorCode + asciiArtColor + "    " + "Distro: " + resetCode + distro,
 		colorCode + asciiArtColor + "    " + "Version: " + resetCode + version,
-		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + strconv.Itoa(nodeCount),
-		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount),
+		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + fmt.Sprint(nodeCount),
+		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount) + "/" + fmt.Sprint(maxPods),
 		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
 		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
 		colorCode + asciiArtColor + "    " + "Storage: " + resetCode + storage,
