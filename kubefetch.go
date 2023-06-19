@@ -83,6 +83,30 @@ func getPodCount(podCount *int) {
 	*podCount = len(pods.Items)
 }
 
+func getServiceCount() int {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	serviceCount := len(services.Items)
+
+	return serviceCount
+
+}
+
 func getNamespaceCount(namespaceCount *int) {
 
 	// create the clientset
@@ -388,6 +412,8 @@ func printArt() {
 		panic(err.Error())
 	}
 
+	serviceCount := getServiceCount()
+
 	var asciiArtColor string
 	var podCount int
 	var namespaceCount int
@@ -434,6 +460,7 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + fmt.Sprint(nodeCount),
 		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount) + "/" + fmt.Sprint(maxPods),
 		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
+		colorCode + asciiArtColor + "    " + "Service Count: " + resetCode + fmt.Sprint(serviceCount),
 		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
 		colorCode + asciiArtColor + "    " + "Storage: " + resetCode + storage,
 		colorCode + asciiArtColor + "    " + "GitOps Tool: " + resetCode + gitopsTool,
