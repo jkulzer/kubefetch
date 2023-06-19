@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("0.5.3")
+		fmt.Println("0.5.4")
 		return
 	} else {
 
@@ -362,6 +362,78 @@ func getNodeAge() (int64, error) {
 	return clusterAgeInDays, nil
 }
 
+func getCNI() string {
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Get all pods in the kube-system namespace
+	namespace := "kube-system"
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var cniUsed string
+
+	// Iterate over the containers in each pod
+	for _, pod := range pods.Items {
+		for _, container := range pod.Spec.Containers {
+			// Check if the container image name contains known CNI plugins
+
+			//this returns true when the container image name is in the list of known cni plugins (for further information see the containerImageContainsCNIName() function)
+			if containerImageContainsCNIName(container.Image) {
+
+				//the container image that is matched by the list in the function containerImageContainsCNIName()
+				cniImage := string(container.Image)
+
+				//runs the switch statement where the strings.Contains returns true
+				switch true {
+				case strings.Contains(cniImage, "cilium"):
+					cniUsed = "Cilium"
+				case strings.Contains(cniImage, "calico"):
+					cniUsed = "Calico"
+				case strings.Contains(cniImage, "weaveworks/weave"):
+					cniUsed = "Weave Net"
+				case strings.Contains(cniImage, "flannel"):
+					cniUsed = "Flannel"
+				default:
+					cniUsed = "unknown"
+				}
+			}
+		}
+	}
+
+	return cniUsed
+}
+
+func containerImageContainsCNIName(image string) bool {
+	// List of known CNI plugins
+	cniPlugins := []string{"calico", "cilium", "flannel", "weave", "kube-router"}
+
+	// Convert the image name to lowercase for case-insensitive matching
+	imageLower := strings.ToLower(image)
+
+	// Check if the image name contains any of the known CNI plugins
+	for _, plugin := range cniPlugins {
+
+		//returns true if any of the images of containers in the kube-system match the list above
+		if strings.Contains(imageLower, plugin) {
+			return true
+
+		}
+	}
+
+	return false
+}
+
 func printArt() {
 	//gets kubernetes version
 	version, err := getKubeVersion()
@@ -413,6 +485,13 @@ func printArt() {
 	}
 
 	serviceCount := getServiceCount()
+	cniUsed := getCNI()
+
+	if (cniUsed == "unknown") && (distro == "K3s") {
+		//k3s bundles the default flannel cli in a binary in the executable, therefore it's detection via the pod images in the kube-system namespace is impossible
+		//therefore, if no known cni is detected in a k3s cluster, it is assumed that the cni is the default bundled flannel
+		cniUsed = "Flannel"
+	}
 
 	var asciiArtColor string
 	var podCount int
@@ -464,6 +543,7 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
 		colorCode + asciiArtColor + "    " + "Storage: " + resetCode + storage,
 		colorCode + asciiArtColor + "    " + "GitOps Tool: " + resetCode + gitopsTool,
+		colorCode + asciiArtColor + "    " + "Container Networking Interface: " + resetCode + cniUsed,
 		colorCode + asciiArtColor + "    " + "Cluster Age: " + resetCode + fmt.Sprint(clusterAge) + "d",
 	}
 
