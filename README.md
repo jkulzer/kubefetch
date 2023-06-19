@@ -82,7 +82,7 @@ Neofetch for Kubernetes Clusters
 - [x] Auth via kubeconfig
 - [ ] AUR package
 - [ ] More displayed info
-	- [ ] CNI used
+	- [x] CNI used (currently only detection for Cilium, Calico, WeaveNet and Flannel)
 	- [x] CRI used
 	- [x] Storage Solution used
 
