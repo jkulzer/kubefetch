@@ -60,6 +60,33 @@ func getKubeconfig() (*rest.Config, error) {
 	return config, nil
 }
 
+func getNonRunningPodCount(podCount *int) {
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var getNonRunningPodCount int
+	for _, pod := range pods.Items {
+
+		if pod.Status.Phase == "Running" || pod.Status.Phase == "Completed" {
+		} else {
+			getNonRunningPodCount = getNonRunningPodCount + 1
+		}
+	}
+}
+
 func getPodCount(podCount *int) {
 
 	// create the clientset
@@ -73,7 +100,6 @@ func getPodCount(podCount *int) {
 		panic(err.Error())
 	}
 
-	//for {
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
@@ -495,9 +521,11 @@ func printArt() {
 
 	var asciiArtColor string
 	var podCount int
+	var nonRunningPods int
 	var namespaceCount int
 
 	getPodCount(&podCount)
+	getNonRunningPodCount(&nonRunningPods)
 	getNamespaceCount(&namespaceCount)
 	//fetch all values from the various functions above
 
@@ -538,6 +566,7 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Version: " + resetCode + version,
 		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + fmt.Sprint(nodeCount),
 		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount) + "/" + fmt.Sprint(maxPods),
+		colorCode + asciiArtColor + "    " + "Unhealthy pods: " + resetCode + strconv.Itoa(nonRunningPods),
 		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
 		colorCode + asciiArtColor + "    " + "Service Count: " + resetCode + fmt.Sprint(serviceCount),
 		colorCode + asciiArtColor + "    " + "Container Runtime Interface: " + resetCode + containerRuntimeInterface,
