@@ -60,22 +60,7 @@ func getKubeconfig() (*rest.Config, error) {
 	return config, nil
 }
 
-func getNonRunningPodCount(podCount *int) {
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
+func getNonRunningPodCount(clientset *kubernetes.Clientset, pods *corev1.PodList) int {
 
 	var getNonRunningPodCount int
 	for _, pod := range pods.Items {
@@ -85,42 +70,19 @@ func getNonRunningPodCount(podCount *int) {
 			getNonRunningPodCount = getNonRunningPodCount + 1
 		}
 	}
+
+	return getNonRunningPodCount
 }
 
-func getPodCount(podCount *int) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
+func getPodCount(clientset *kubernetes.Clientset, pods *corev1.PodList) int {
 
 	// Get the number of pods
-	*podCount = len(pods.Items)
+	podCount := len(pods.Items)
+
+	return podCount
 }
 
-func getServiceCount() int {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getServiceCount(clientset *kubernetes.Clientset) int {
 
 	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -133,40 +95,20 @@ func getServiceCount() int {
 
 }
 
-func getNamespaceCount(namespaceCount *int) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getNamespaceCount(clientset *kubernetes.Clientset) int {
 
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// Get the number of pods
-	*namespaceCount = len(namespaces.Items)
+	// Get the number of namespaces
+	namespaceCount := len(namespaces.Items)
+
+	return namespaceCount
 }
 
-func getNodeCount() (int64, int64) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getNodeCount(clientset *kubernetes.Clientset) (int64, int64) {
 
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -193,18 +135,7 @@ func getNodeCount() (int64, int64) {
 	return int64(nodeCount), int64(maxPods)
 }
 
-func getKubeVersion() (string, error) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getKubeVersion(clientset *kubernetes.Clientset) (string, error) {
 
 	// Get the server version
 	version, err := clientset.Discovery().ServerVersion()
@@ -215,18 +146,7 @@ func getKubeVersion() (string, error) {
 	return version.String(), nil
 }
 
-func getContainerRuntimeInterface() (string, error) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getContainerRuntimeInterface(clientset *kubernetes.Clientset) (string, error) {
 
 	// Retrieve the CRI information from the node status
 	nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
@@ -244,18 +164,7 @@ func getContainerRuntimeInterface() (string, error) {
 
 }
 
-func getStorage() (string, error) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getStorage(clientset *kubernetes.Clientset) (string, error) {
 
 	// Retrieve the CRI information from the node status
 	storageClassList, err := clientset.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
@@ -279,17 +188,7 @@ func getStorage() (string, error) {
 
 }
 
-func getKubernetesEndpointPort() int {
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getKubernetesEndpointPort(clientset *kubernetes.Clientset) int {
 
 	endpoint, err := clientset.CoreV1().Endpoints("default").Get(context.TODO(), "kubernetes", v1.GetOptions{})
 	if err != nil {
@@ -308,18 +207,7 @@ func getKubernetesEndpointPort() int {
 	return portNumber
 }
 
-func getGitops() (string, error) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getGitops(clientset *kubernetes.Clientset) (string, error) {
 
 	// Retrieve the list of namespaces to find out if Flux or ArgoCD namespaces exist
 	namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
@@ -352,18 +240,7 @@ func getGitops() (string, error) {
 	return gitopsToolUsed, nil
 }
 
-func getNodeAge() (int64, error) {
-
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getNodeAge(clientset *kubernetes.Clientset) (int64, error) {
 
 	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -388,17 +265,7 @@ func getNodeAge() (int64, error) {
 	return clusterAgeInDays, nil
 }
 
-func getCNI() string {
-	// create the clientset
-	config, err := getKubeconfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+func getCNI(clientset *kubernetes.Clientset) string {
 
 	// Get all pods in the kube-system namespace
 	namespace := "kube-system"
@@ -460,14 +327,45 @@ func containerImageContainsCNIName(image string) bool {
 	return false
 }
 
-func printArt() {
-	//gets kubernetes version
-	version, err := getKubeVersion()
+func getPods(clientset *kubernetes.Clientset) *corev1.PodList {
+	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
 
-	kubernetesEndpointPort := getKubernetesEndpointPort()
+	return pods
+}
+
+func getClientSet() *kubernetes.Clientset {
+
+	// create the clientset
+	config, err := getKubeconfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return clientset
+}
+
+func printArt() {
+
+	//initiates clientset
+	clientset := getClientSet()
+
+	//gets kubernetes version
+	version, err := getKubeVersion(clientset)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	pods := getPods(clientset)
+
+	kubernetesEndpointPort := getKubernetesEndpointPort(clientset)
 
 	//gets kubernetes distro
 	var distro string
@@ -485,33 +383,33 @@ func printArt() {
 	}
 
 	//gets storage solution used
-	storage, err := getStorage()
+	storage, err := getStorage(clientset)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	//gets container runtime interface
-	containerRuntimeInterface, err := getContainerRuntimeInterface()
+	containerRuntimeInterface, err := getContainerRuntimeInterface(clientset)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	gitopsTool, err := getGitops()
+	gitopsTool, err := getGitops(clientset)
 	if err != nil {
 		panic(err.Error())
 	}
-	clusterAge, err := getNodeAge()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	nodeCount, maxPods := getNodeCount()
+	clusterAge, err := getNodeAge(clientset)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	serviceCount := getServiceCount()
-	cniUsed := getCNI()
+	nodeCount, maxPods := getNodeCount(clientset)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	serviceCount := getServiceCount(clientset)
+	cniUsed := getCNI(clientset)
 
 	if (cniUsed == "unknown") && (distro == "K3s") {
 		//k3s bundles the default flannel cli in a binary in the executable, therefore it's detection via the pod images in the kube-system namespace is impossible
@@ -519,15 +417,12 @@ func printArt() {
 		cniUsed = "Flannel"
 	}
 
-	var asciiArtColor string
-	var podCount int
-	var nonRunningPods int
-	var namespaceCount int
-
-	getPodCount(&podCount)
-	getNonRunningPodCount(&nonRunningPods)
-	getNamespaceCount(&namespaceCount)
+	podCount := getPodCount(clientset, pods)
+	nonRunningPods := getNonRunningPodCount(clientset, pods)
+	namespaceCount := getNamespaceCount(clientset)
 	//fetch all values from the various functions above
+
+	var asciiArtColor string
 
 	var red int
 	var green int
@@ -565,7 +460,7 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Distro: " + resetCode + distro,
 		colorCode + asciiArtColor + "    " + "Version: " + resetCode + version,
 		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + fmt.Sprint(nodeCount),
-		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + strconv.Itoa(podCount) + "/" + fmt.Sprint(maxPods),
+		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + fmt.Sprint(podCount) + "/" + fmt.Sprint(maxPods),
 		colorCode + asciiArtColor + "    " + "Unhealthy pods: " + resetCode + strconv.Itoa(nonRunningPods),
 		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
 		colorCode + asciiArtColor + "    " + "Service Count: " + resetCode + fmt.Sprint(serviceCount),
