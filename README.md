@@ -1,6 +1,6 @@
 <br />
 <div align="center">
-    <img src="https://cncf-branding.netlify.app/img/projects/kubernetes/icon/color/kubernetes-icon-color.svg" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.png" alt="Kubernetes Logo" width="80" height="80">
   </a>
 
 <h1 align="center">Kubefetch</h1>
