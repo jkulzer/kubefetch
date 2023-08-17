@@ -18,10 +18,10 @@ import (
 	"embed"
 	"io/fs"
 
-corev1 "k8s.io/api/core/v1"
-metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -177,7 +177,7 @@ func getStorage(clientset *kubernetes.Clientset) (string, error) {
 	for _, storageclass := range storageClassList.Items {
 		if storageclass.Name == "longhorn" {
 			storageUsed = "Longhorn"
-		} else if strings.Contains(storageclass.Name, "rook") {
+		} else if strings.Contains(storageclass.Name, "ceph") {
 			storageUsed = "Rook/Ceph"
 		} else {
 			storageUsed = storageUsed + ""
@@ -240,12 +240,34 @@ func getGitops(clientset *kubernetes.Clientset) (string, error) {
 	return gitopsToolUsed, nil
 }
 
-func getNodeAge(clientset *kubernetes.Clientset) (int64, error) {
+func getNodeInfo(clientset *kubernetes.Clientset) *corev1.NodeList {
 
 	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
+
+	return nodes
+}
+
+func isTalos(nodes *corev1.NodeList) bool {
+
+	var isTalos bool
+	for _, node := range nodes.Items {
+		nodeInfo := node.Status.NodeInfo.OSImage
+		if strings.Contains(nodeInfo, "Talos") {
+			isTalos = true
+			break
+		} else {
+			isTalos = false
+		}
+	}
+
+	return isTalos
+
+}
+
+func getNodeAge(nodes *corev1.NodeList) (int64, error) {
 
 	var oldestNode *corev1.Node
 	var oldestNodeAge time.Time
@@ -365,7 +387,11 @@ func printArt() {
 
 	pods := getPods(clientset)
 
+	nodes := getNodeInfo(clientset)
+
 	kubernetesEndpointPort := getKubernetesEndpointPort(clientset)
+
+	isTalos := isTalos(nodes)
 
 	//gets kubernetes distro
 	var distro string
@@ -377,7 +403,11 @@ func printArt() {
 		if kubernetesEndpointPort == 16443 {
 			distro = "MicroK8s"
 		} else {
-			distro = "K8s"
+			if isTalos {
+				distro = "Talos"
+			} else {
+				distro = "K8s"
+			}
 		}
 
 	}
@@ -398,7 +428,7 @@ func printArt() {
 	if err != nil {
 		panic(err.Error())
 	}
-	clusterAge, err := getNodeAge(clientset)
+	clusterAge, err := getNodeAge(nodes)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -427,15 +457,20 @@ func printArt() {
 	var red int
 	var green int
 	var blue int
-	if distro == "MicroK8s" {
+	switch distro {
+	case "MicroK8s":
 		red = 233
 		green = 84
 		blue = 32
-	} else if distro == "K3s" {
+	case "K3s":
 		red = 255
 		green = 198
 		blue = 28
-	} else {
+	case "Talos":
+		red = 249
+		green = 42
+		blue = 32
+	default:
 		red = 50
 		green = 108
 		blue = 229
