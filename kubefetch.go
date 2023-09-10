@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("0.5.4")
+		fmt.Println("0.7.1")
 		return
 	} else {
 
@@ -54,7 +54,7 @@ func getKubeconfig() (*rest.Config, error) {
 	// Build the client config from the kubeconfig file
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		return nil, err
+		panic("Failed to fetch kubeconfig. Check if your kubeconfig exists at " + kubeconfig)
 	}
 
 	return config, nil
