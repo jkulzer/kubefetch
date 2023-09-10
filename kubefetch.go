@@ -65,7 +65,7 @@ func getNonRunningPodCount(clientset *kubernetes.Clientset, pods *corev1.PodList
 	var getNonRunningPodCount int
 	for _, pod := range pods.Items {
 
-		if pod.Status.Phase == "Running" || pod.Status.Phase == "Completed" {
+		if pod.Status.Phase == "Running" || pod.Status.Phase == "Succeeded" {
 		} else {
 			getNonRunningPodCount = getNonRunningPodCount + 1
 		}
