@@ -135,41 +135,41 @@ func getNodeCount(clientset *kubernetes.Clientset) (int64, int64) {
 	return int64(nodeCount), int64(maxPods)
 }
 
-func getKubeVersion(clientset *kubernetes.Clientset) (string, error) {
+func getKubeVersion(clientset *kubernetes.Clientset) (string) {
 
 	// Get the server version
 	version, err := clientset.Discovery().ServerVersion()
 	if err != nil {
-		return "", err
+		panic(err.Error())
 	}
 
-	return version.String(), nil
+	return version.String()
 }
 
-func getContainerRuntimeInterface(clientset *kubernetes.Clientset) (string, error) {
+func getContainerRuntimeInterface(clientset *kubernetes.Clientset) (string) {
 
 	// Retrieve the CRI information from the node status
 	nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		panic(err.Error())
 	}
 
 	if len(nodeList.Items) == 0 {
-		return "", fmt.Errorf("no nodes found")
+		panic(err.Error())
 	}
 
 	cri := nodeList.Items[0].Status.NodeInfo.ContainerRuntimeVersion
 
-	return cri, nil
+	return cri
 
 }
 
-func getStorage(clientset *kubernetes.Clientset) (string, error) {
+func getStorage(clientset *kubernetes.Clientset) (string) {
 
 	// Retrieve the CRI information from the node status
 	storageClassList, err := clientset.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		panic(err.Error())
 	}
 
 	// Check if "longhorn-system" namespace exists
@@ -184,7 +184,7 @@ func getStorage(clientset *kubernetes.Clientset) (string, error) {
 		}
 	}
 
-	return storageUsed, nil
+	return storageUsed
 
 }
 
@@ -207,12 +207,12 @@ func getKubernetesEndpointPort(clientset *kubernetes.Clientset) int {
 	return portNumber
 }
 
-func getGitops(clientset *kubernetes.Clientset) (string, error) {
+func getGitops(clientset *kubernetes.Clientset) (string) {
 
 	// Retrieve the list of namespaces to find out if Flux or ArgoCD namespaces exist
 	namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		panic(err.Error())
 	}
 
 	var hasFlux, hasArgoCD bool // Flags to track namespace detection
@@ -237,7 +237,7 @@ func getGitops(clientset *kubernetes.Clientset) (string, error) {
 		gitopsToolUsed = "No GitOps tool used"
 	}
 
-	return gitopsToolUsed, nil
+	return gitopsToolUsed
 }
 
 func getNodeInfo(clientset *kubernetes.Clientset) *corev1.NodeList {
@@ -267,7 +267,7 @@ func isTalos(nodes *corev1.NodeList) bool {
 
 }
 
-func getNodeAge(nodes *corev1.NodeList) (int64, error) {
+func getNodeAge(nodes *corev1.NodeList) (int64) {
 
 	var oldestNode *corev1.Node
 	var oldestNodeAge time.Time
@@ -284,7 +284,7 @@ func getNodeAge(nodes *corev1.NodeList) (int64, error) {
 	clusterAge = time.Now().Sub(oldestNodeAge)
 	clusterAgeInDays := int64(clusterAge.Hours() / 24)
 
-	return clusterAgeInDays, nil
+	return clusterAgeInDays
 }
 
 func getCNI(clientset *kubernetes.Clientset) string {
@@ -380,10 +380,7 @@ func printArt() {
 	clientset := getClientSet()
 
 	//gets kubernetes version
-	version, err := getKubeVersion(clientset)
-	if err != nil {
-		panic(err.Error())
-	}
+	version := getKubeVersion(clientset)
 
 	pods := getPods(clientset)
 
@@ -413,30 +410,16 @@ func printArt() {
 	}
 
 	//gets storage solution used
-	storage, err := getStorage(clientset)
-	if err != nil {
-		panic(err.Error())
-	}
+	storage := getStorage(clientset)
 
 	//gets container runtime interface
-	containerRuntimeInterface, err := getContainerRuntimeInterface(clientset)
-	if err != nil {
-		panic(err.Error())
-	}
+	containerRuntimeInterface := getContainerRuntimeInterface(clientset)
 
-	gitopsTool, err := getGitops(clientset)
-	if err != nil {
-		panic(err.Error())
-	}
-	clusterAge, err := getNodeAge(nodes)
-	if err != nil {
-		panic(err.Error())
-	}
+	gitopsTool := getGitops(clientset)
+
+	clusterAge:= getNodeAge(nodes)
 
 	nodeCount, maxPods := getNodeCount(clientset)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	serviceCount := getServiceCount(clientset)
 	cniUsed := getCNI(clientset)
