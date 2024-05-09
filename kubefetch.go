@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -135,7 +136,7 @@ func getNodeCount(clientset *kubernetes.Clientset) (int64, int64) {
 	return int64(nodeCount), int64(maxPods)
 }
 
-func getKubeVersion(clientset *kubernetes.Clientset) (string) {
+func getKubeVersion(clientset *kubernetes.Clientset) string {
 
 	// Get the server version
 	version, err := clientset.Discovery().ServerVersion()
@@ -146,7 +147,7 @@ func getKubeVersion(clientset *kubernetes.Clientset) (string) {
 	return version.String()
 }
 
-func getContainerRuntimeInterface(clientset *kubernetes.Clientset) (string) {
+func getContainerRuntimeInterface(clientset *kubernetes.Clientset) string {
 
 	// Retrieve the CRI information from the node status
 	nodeList, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
@@ -164,7 +165,7 @@ func getContainerRuntimeInterface(clientset *kubernetes.Clientset) (string) {
 
 }
 
-func getStorage(clientset *kubernetes.Clientset) (string) {
+func getStorage(clientset *kubernetes.Clientset) string {
 
 	// Retrieve the CRI information from the node status
 	storageClassList, err := clientset.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
@@ -207,7 +208,7 @@ func getKubernetesEndpointPort(clientset *kubernetes.Clientset) int {
 	return portNumber
 }
 
-func getGitops(clientset *kubernetes.Clientset) (string) {
+func getGitops(clientset *kubernetes.Clientset) string {
 
 	// Retrieve the list of namespaces to find out if Flux or ArgoCD namespaces exist
 	namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
@@ -267,7 +268,7 @@ func isTalos(nodes *corev1.NodeList) bool {
 
 }
 
-func getNodeAge(nodes *corev1.NodeList) (int64) {
+func getNodeAge(nodes *corev1.NodeList) int64 {
 
 	var oldestNode *corev1.Node
 	var oldestNodeAge time.Time
@@ -358,6 +359,28 @@ func getPods(clientset *kubernetes.Clientset) *corev1.PodList {
 	return pods
 }
 
+func getTotalResourceCapacity(clientset *kubernetes.Clientset) (float64, int64) {
+	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var totalRam int64
+	var totalCpu int64
+	for _, node := range nodes.Items {
+		ramCapacity := node.Status.Capacity["memory"]
+		totalRam += ramCapacity.Value()
+		cpuCapacity := node.Status.Capacity["cpu"]
+		totalCpu += cpuCapacity.Value()
+	}
+
+	var totalRamGb float64 = float64(totalRam) / 1000 / 1000 / 10
+
+	totalRamGb = math.Round(totalRamGb) / 100
+
+	return totalRamGb, totalCpu
+}
+
 func getClientSet() *kubernetes.Clientset {
 
 	// create the clientset
@@ -417,9 +440,11 @@ func printArt() {
 
 	gitopsTool := getGitops(clientset)
 
-	clusterAge:= getNodeAge(nodes)
+	clusterAge := getNodeAge(nodes)
 
 	nodeCount, maxPods := getNodeCount(clientset)
+
+	totalRam, totalCpus := getTotalResourceCapacity(clientset)
 
 	serviceCount := getServiceCount(clientset)
 	cniUsed := getCNI(clientset)
@@ -479,6 +504,8 @@ func printArt() {
 		colorCode + asciiArtColor + "    " + "Version: " + resetCode + version,
 		colorCode + asciiArtColor + "    " + "Node Count: " + resetCode + fmt.Sprint(nodeCount),
 		colorCode + asciiArtColor + "    " + "Pod Count: " + resetCode + fmt.Sprint(podCount) + "/" + fmt.Sprint(maxPods),
+		colorCode + asciiArtColor + "    " + "Total CPUs: " + resetCode + fmt.Sprint(totalCpus),
+		colorCode + asciiArtColor + "    " + "Total RAM: " + resetCode + fmt.Sprint(totalRam) + "GB",
 		colorCode + asciiArtColor + "    " + "Unhealthy pods: " + resetCode + strconv.Itoa(nonRunningPods),
 		colorCode + asciiArtColor + "    " + "Namespace Count: " + resetCode + strconv.Itoa(namespaceCount),
 		colorCode + asciiArtColor + "    " + "Service Count: " + resetCode + fmt.Sprint(serviceCount),
