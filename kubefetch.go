@@ -180,6 +180,8 @@ func getStorage(clientset *kubernetes.Clientset) string {
 			storageUsed = "Longhorn"
 		} else if strings.Contains(storageclass.Name, "ceph") {
 			storageUsed = "Rook/Ceph"
+		} else if strings.Contains(storageclass.Name, "local-path") {
+			storageUsed = "Local Path Provisioner"
 		} else {
 			storageUsed = storageUsed + ""
 		}
