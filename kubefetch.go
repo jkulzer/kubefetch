@@ -320,10 +320,10 @@ func getCNI(clientset *kubernetes.Clientset) string {
 					cniUsed = "Weave Net"
 				case strings.Contains(cniImage, "flannel"):
 					cniUsed = "Flannel"
-				default:
-					cniUsed = "unknown"
 				}
-			}
+			} else {
+				cniUsed = "unknown"
+		}
 		}
 	}
 
