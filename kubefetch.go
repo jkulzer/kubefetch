@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -48,9 +49,23 @@ func main() {
 	}
 }
 
+func getKubeconfigPath() string {
+	if path := os.Getenv("KUBECONFIG"); path != "" {
+		usr, _ := user.Current()
+		homeDir := usr.HomeDir
+		if strings.HasPrefix(path, "~/") {
+			path = filepath.Join(homeDir, path[2:])
+		}
+
+		return path
+	}
+
+	return filepath.Join(os.Getenv("HOME"), ".kube", "config")
+}
+
 func getKubeconfig() (*rest.Config, error) {
 	// Get the path to the kubeconfig file
-	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	kubeconfig := getKubeconfigPath()
 
 	// Build the client config from the kubeconfig file
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
