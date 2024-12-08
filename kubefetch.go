@@ -40,7 +40,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("0.7.1")
+		fmt.Println("0.8.1")
 		return
 	} else {
 
@@ -340,7 +340,7 @@ func getCNI(clientset *kubernetes.Clientset) string {
 				}
 			} else {
 				cniUsed = "unknown"
-		}
+			}
 		}
 	}
 
