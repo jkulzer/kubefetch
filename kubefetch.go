@@ -339,8 +339,10 @@ func getCNI(clientset *kubernetes.Clientset) string {
 					cniUsed = "Flannel"
 				}
 			} else {
-				cniUsed = "unknown"
-		}
+				if cniUsed == "" {
+					cniUsed = "unknown"
+				}
+			}
 		}
 	}
 
